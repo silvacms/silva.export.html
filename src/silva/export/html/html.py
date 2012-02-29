@@ -16,7 +16,6 @@ from silva.translations import translate as _
 logger = logging.getLogger('silva.export.html')
 
 
-
 class Exporter(object):
 
     def __init__(self, root, archive):
@@ -43,7 +42,6 @@ class Exporter(object):
         seen = set()
         for reference in self.references:
             target = reference.target
-            print reference.source, reference.target
             if target is None or not IAsset.providedBy(target):
                 continue
             if not reference.is_target_inside_container(self.root):
