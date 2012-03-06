@@ -5,6 +5,8 @@ import logging
 
 from five import grok
 from zope.component import getMultiAdapter, getUtility
+from zope.interface import Interface
+
 from silva.core.interfaces import IPublishable, IContainer, IContentExporter
 from silva.core.interfaces import IAsset, IAssetData
 from silva.core.services.utils import walk_silva_tree
@@ -68,6 +70,7 @@ class HTMLExporter(grok.Adapter):
 
     name = "HTML (zip)"
     extension = "zip"
+    options = Interface
 
     def export(self, settings=None):
         output = StringIO()
