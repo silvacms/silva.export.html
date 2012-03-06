@@ -2,7 +2,6 @@
 from Acquisition import aq_parent
 
 from zope.publisher.browser import TestRequest
-from silva.export.html.skin import IHTMLExportLayer
 from silva.core.references.utils import relative_path
 from silva.core.interfaces import IPublishable, IContainer, IAsset
 
@@ -32,8 +31,8 @@ class HTMLContentUrl(object):
 
 class HTMLExportRequest(TestRequest):
 
-    def __init__(self, content):
-        super(HTMLExportRequest, self).__init__(skin=IHTMLExportLayer)
+    def __init__(self, content, skin):
+        super(HTMLExportRequest, self).__init__(skin=skin)
         self.other = {}
         self.getHTMLUrl = HTMLContentUrl(content)
 
