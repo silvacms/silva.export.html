@@ -2,39 +2,69 @@
 from cStringIO import StringIO
 from zipfile import ZipFile, ZIP_DEFLATED
 import logging
+import os
 
 from five import grok
 from zope import schema
-from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.component import getMultiAdapter, getUtility, getUtilitiesFor
 from zope.interface import Interface
 from zope.publisher.interfaces.browser import IBrowserSkinType
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from silva.core.interfaces import IPublishable, IContainer, IContentExporter
 from silva.core.interfaces import IAsset, IAssetData
-from silva.core.services.utils import walk_silva_tree
-from silva.core.references.interfaces import IReferenceService
-from silva.export.html.url import HTMLExportRequest, HTMLContentUrl
-from silva.export.html.skin import IHTMLExportSkin
+from silva.core.interfaces import IPublishable, IContainer, IContentExporter
 from silva.core.interfaces.errors import ExternalReferenceError
+from silva.core.references.interfaces import IReferenceService
+from silva.core.services.utils import walk_silva_tree
+from silva.export.html.interfaces import IHTMLExportSkin, IHTMLExportSettings
+from silva.export.html.url import HTMLExportRequest, HTMLContentUrl
 from silva.translations import translate as _
 
 logger = logging.getLogger('silva.export.html')
 
 
+class HTMLExportSettings(object):
+    grok.implements(IHTMLExportSettings)
+
+    def __init__(self, root, skin):
+        self.root = root
+        self.skin = skin
+        self._resources = {}
+
+    def add_resource(self, target, path=None, where=None):
+        parts = []
+        if where is not None:
+            parts.append(os.path.dirname(where['__file__']))
+            parts.append('static')
+        if path is not None:
+            parts.append(path)
+        if not parts:
+            raise ValueError(u'Empty path')
+        target_path = os.path.join(*parts)
+        if self._resources.get(target, target_path) != target_path:
+            # We make sure we don't override this with a different path.
+            raise ValueError(target)
+        self._resources[target] = target_path
+
+    def get_contents(self):
+        return walk_silva_tree(self.root, requires=IPublishable)
+
+    def get_resources(self):
+        return self._resources.items()
+
+
 class Exporter(object):
 
-    def __init__(self, root, archive, export_skin):
-        self.root = root
+    def __init__(self, settings, archive):
+        self.settings = settings
         self.archive = archive
-        self.export_skin = export_skin
         self.references = []
         self.get_references = getUtility(IReferenceService).get_references_from
-        self.get_archive_name = HTMLContentUrl(root)
+        self.get_archive_name = HTMLContentUrl(settings.root)
 
     def export_content(self):
-        for content in walk_silva_tree(self.root, requires=IPublishable):
+        for content in self.settings.get_contents():
             if IContainer.providedBy(content):
                 continue
             viewable = content.get_viewable()
@@ -42,29 +72,43 @@ class Exporter(object):
                 self.archive.writestr(
                     self.get_archive_name(content),
                     getMultiAdapter(
-                        (content, HTMLExportRequest(content, self.export_skin)),
+                        (content, HTMLExportRequest(content, self.settings)),
                         name='index.html')().encode('utf-8'))
                 self.references.extend(self.get_references(viewable))
 
     def export_assets(self):
         seen = set()
+        root = self.settings.root
         for reference in self.references:
             target = reference.target
             if target is None or not IAsset.providedBy(target):
                 continue
-            if not reference.is_target_inside_container(self.root):
+            if not reference.is_target_inside_container(root):
                 raise ExternalReferenceError(
-                    _(u"External references"),
-                    self.root, reference.target, self.root)
+                    _(u"External references"), root, reference.target, root)
             path = self.get_archive_name(target)
             if path in seen:
                 continue
             seen.add(path)
             self.archive.writestr(path, IAssetData(target).getData())
 
+    def export_resources(self):
+        add = self.archive.write
+        for target, origin in self.settings.get_resources():
+            if not os.path.isdir(origin):
+                add(origin, target)
+                continue
+            for dirpath, dirnames, filenames in os.walk(origin):
+                for filename in filenames:
+                    fullname = os.path.join(dirpath, filename)
+                    add(fullname,
+                        os.path.join(
+                            target, os.path.relpath(fullname, dirpath)))
+
     def export(self):
         self.export_content()
         self.export_assets()
+        self.export_resources()
 
 
 @grok.provider(IContextSourceBinder)
@@ -98,6 +142,6 @@ class HTMLExporter(grok.Adapter):
     def export(self, html_skin, **options):
         output = StringIO()
         archive = ZipFile(output, "w", ZIP_DEFLATED)
-        Exporter(self.context, archive, html_skin).export()
+        Exporter(HTMLExportSettings(self.context, html_skin), archive).export()
         archive.close()
         return output.getvalue()

@@ -10,14 +10,14 @@
   <view
      for="silva.core.interfaces.ISilvaObject"
      factory=".url.AbsoluteURL"
-     type=".skin.IHTMLExportLayer"
+     type=".interfaces.IHTMLExportLayer"
      permission="zope.Public"
      provides="silva.core.views.interfaces.ISilvaURL"
      />
 
   <browser:page
      for="silva.core.interfaces.ISilvaObject"
-     layer=".skin.IHTMLExportLayer"
+     layer=".interfaces.IHTMLExportLayer"
      name="absolute_url"
      class=".url.AbsoluteURL"
      permission="zope.Public"
