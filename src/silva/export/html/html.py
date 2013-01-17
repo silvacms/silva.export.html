@@ -15,7 +15,7 @@ from zope.publisher.interfaces.browser import IBrowserSkinType
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from silva.core.interfaces import IAsset, IAssetData
+from silva.core.interfaces import IAsset, IAssetPayload
 from silva.core.interfaces import IPublishable, IContainer, IContentExporter
 from silva.core.interfaces.errors import ExternalReferenceError
 from silva.core.references.interfaces import IReferenceService
@@ -93,7 +93,9 @@ class Exporter(object):
             if path in seen:
                 continue
             seen.add(path)
-            self.archive.writestr(path, IAssetData(target).getData())
+            payload = IAssetPayload(target).get_payload()
+            if payload is not None:
+                self.archive.writestr(path, payload)
 
     def export_resources(self):
         add = self.archive.write
