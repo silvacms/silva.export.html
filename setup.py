@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2002-2012 Infrae. All rights reserved.
+# Copyright (c) 2002-2013 Infrae. All rights reserved.
 # See also LICENSE.txt
 
 from setuptools import setup, find_packages
 import os
 
-version = '3.0dev'
+version = '3.0'
 
 tests_require = [
     'Products.Silva [test]',
@@ -33,9 +33,19 @@ setup(name='silva.export.html',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-        'Zope2',
         'five.grok',
+        'setuptools',
         'silva.core.interfaces',
+        'silva.core.layout',
+        'silva.core.references',
+        'silva.core.services',
+        'silva.core.views',
+        'silva.translations',
+        'zope.component',
+        'zope.interface',
+        'zope.schema',
+        'zope.publisher',
+        'zope.traversing',
         ],
       tests_require=tests_require,
       extras_require={'test': tests_require},
