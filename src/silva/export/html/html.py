@@ -3,7 +3,7 @@
 # See also LICENSE.txt
 
 from cStringIO import StringIO
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 import logging
 import os
 
@@ -122,7 +122,7 @@ def html_skin(context):
     for name, skin in getUtilitiesFor(IBrowserSkinType):
         if skin.extends(IHTMLExportSkin):
             terms.append(SimpleTerm(
-                    value=skin, token=skin.__identifier__, title=name))
+                value=skin, token=skin.__identifier__, title=name))
     return SimpleVocabulary(terms)
 
 
@@ -150,3 +150,12 @@ class HTMLExporter(grok.Adapter):
         Exporter(HTMLExportSettings(self.context, html_skin), archive).export()
         archive.close()
         return output.getvalue()
+
+    def export_to_folder(self, folder, html_skin, **options):
+        ## We use zero compression setting, it should be faster.
+        archive = ZipFile(StringIO(), "w", ZIP_STORED)
+        Exporter(HTMLExportSettings(self.context, html_skin), archive).export()
+        ## We extract all the archive content to the folder specified.
+        archive.extractall(folder)
+        archive.close()
+        return folder
