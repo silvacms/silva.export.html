@@ -13,7 +13,7 @@ tests_require = [
 
 setup(name='silva.export.html',
       version=version,
-      description="Export Silva content to html",
+      description="Export Silva content to standalone HTML",
       long_description=open("README.txt").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
       classifiers=[
@@ -25,7 +25,7 @@ setup(name='silva.export.html',
       keywords='silva export html',
       author='Infrae',
       author_email='info@infrae.com',
-      url='http://infrae.com/products/silva',
+      url='https://github.com/silvacms/silva.export.html',
       license='BSD',
       package_dir={'': 'src'},
       packages=find_packages('src'),
